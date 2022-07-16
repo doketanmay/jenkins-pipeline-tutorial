@@ -8,7 +8,7 @@ pipeline {
     environment {
 	    region = "us-east-1"
         docker_repo_uri = "712997521892.dkr.ecr.us-east-1.amazonaws.com/sample-app"
-		task_def_arn = "arn:aws:ecs:us-east-1:712997521892:task-definition/first-run-task-definition"
+		task_def_arn = "arn:aws:ecs:us-east-1:712997521892:task-definition/first-run-task-definition:$BUILD_NUMBER"
         cluster = "sample-cluster"
         exec_role_arn = "arn:aws:iam::712997521892:role/ecsTaskExecutionRole"
     }
@@ -32,20 +32,20 @@ pipeline {
                        commit_id = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                   }
                   // Build the Docker image
-                  sh "docker build -t ${docker_repo_uri}:${commit_id} ."
+                  sh "docker build -t ${docker_repo_uri}:${BUILD_NUMBER} ."
                   // Get Docker login credentials for ECR
                   sh "aws ecr get-login --no-include-email --region ${region} | sh"
                   // Push Docker image
-                  sh "docker push ${docker_repo_uri}:${commit_id}"
+                  sh "docker push ${docker_repo_uri}:${BUILD_NUMBER}"
                   // Clean up
-                  sh "docker rmi -f ${docker_repo_uri}:${commit_id}"
+                  sh "docker rmi -f ${docker_repo_uri}:${BUILD_NUMBER}"
               }
          }
 
     stage('Deploy') {
     		steps {
 			// Override image field in taskdef file
-			sh "sed -i 's|{{image}}|${docker_repo_uri}:${commit_id}|' taskdef.json"
+			sh "sed -i 's|{{image}}|${docker_repo_uri}:${BUILD_NUMBER}|' taskdef.json"
 			// Create a new task definition revision
 			sh "aws ecs register-task-definition --execution-role-arn ${exec_role_arn} --cli-input-json file://taskdef.json --region ${region}"
 			// Update service on Fargate
