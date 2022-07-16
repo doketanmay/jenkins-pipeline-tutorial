@@ -95,9 +95,6 @@ pipeline {
 			sh "aws ecs update-service --cluster ${cluster} --service sample-app-service --task-definition ${task_def_arn} --region ${region}"
 			}
     		}
-
-    }
-}
     
 
     }
